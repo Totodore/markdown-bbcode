@@ -5,11 +5,20 @@ use markdown::{Constructs, ParseOptions, mdast::Node};
 pub struct MdToBbcode<'a, W> {
     input: &'a str,
     writer: W,
+    heading_size: [u8; 6],
 }
 
 impl<'a, W> MdToBbcode<'a, W> {
     pub fn new(input: &'a str, writer: W) -> Self {
-        Self { input, writer }
+        Self {
+            input,
+            writer,
+            heading_size: default_heading_size(),
+        }
+    }
+    pub fn with_heading_size(mut self, sizes: [u8; 6]) -> Self {
+        self.heading_size = sizes;
+        self
     }
 }
 
@@ -44,14 +53,8 @@ impl<'a, W: Write> MdToBbcode<'a, W> {
                 write!(self.writer, "[/quote]")
             }
             Node::Heading(heading) => {
-                let size = match heading.depth {
-                    1 => 7,
-                    2 => 6,
-                    3 => 5,
-                    4 => 4,
-                    5 => 3,
-                    _ => 2,
-                };
+                let idx = std::cmp::max(heading.depth - 1, 5) as usize;
+                let size = self.heading_size[idx];
                 write!(self.writer, "[size={size}][b]")?;
                 for child in &heading.children {
                     self.next_node(child)?;
@@ -184,6 +187,17 @@ impl<'a, W: Write> MdToBbcode<'a, W> {
         }
         Ok(())
     }
+}
+
+fn default_heading_size() -> [u8; 6] {
+    [
+        18, // #
+        14, // ##
+        12, // ###
+        10, // ####
+        8,  // #####
+        6,  // ######+
+    ]
 }
 
 #[cfg(test)]
