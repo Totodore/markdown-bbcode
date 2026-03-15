@@ -2,6 +2,14 @@ use std::io::Write;
 
 use markdown::{Constructs, ParseOptions, mdast::Node};
 
+pub fn md_to_bbcode(input: &str) -> String {
+    let mut writer = Vec::new();
+    let mut parser = MdToBbcode::new(input, &mut writer);
+
+    parser.serialize().expect("Vec writer should never panic");
+    String::from_utf8(writer).expect("The writer should be guaranted to have utf-8")
+}
+
 pub struct MdToBbcode<'a, W> {
     input: &'a str,
     writer: W,
